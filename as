@@ -1,62 +1,6 @@
-<!DOCTYPE html>
-<html lang="ar">
-<head>
-<meta charset="UTF-8">
-<title>سما بغداد</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-body{
- font-family:Tahoma;
- direction:rtl;
- background:#f2f2f2;
- padding:15px
-}
-.box{
- background:#fff;
- padding:15px;
- border-radius:8px;
- max-width:420px;
- margin:auto;
- box-shadow:0 0 10px #ccc
-}
-h2{text-align:center;color:#0a4}
-input,textarea,button{
- width:100%;
- padding:10px;
- margin:6px 0;
- font-size:15px
-}
-button{
- background:#0a4;
- color:#fff;
- border:none;
- border-radius:5px
-}
-.info{font-size:13px;color:#444}
-</style>
-</head>
-
-<body>
-
-<div class="box">
-<h2>سما بغداد</h2>
-
-<input id="shop" placeholder="اسم المحل">
-<input id="phone" placeholder="رقم الهاتف">
-<textarea id="note" placeholder="ملاحظات"></textarea>
-
-<button onclick="getLocation()">📍 أخذ الموقع</button>
-<div id="loc" class="info">الموقع: غير محدد</div>
-
-<button onclick="addPhoto()">📸 إضافة صورة</button>
-<div id="photos" class="info"></div>
-
-<button onclick="savePDF()">📄 حفظ PDF</button>
-<div id="msg" class="info"></div>
-</div>
-
 <script>
-let locationText="غير محدد";
+let locationText="";
+let locationReady=false;
 let photoCount=0;
 
 function getLocation(){
@@ -64,13 +8,16 @@ function getLocation(){
   loc.innerText="الموقع غير مدعوم";
   return;
  }
+ loc.innerText="⏳ جارٍ تحديد الموقع...";
  navigator.geolocation.getCurrentPosition(
   p=>{
-   locationText = p.coords.latitude + "," + p.coords.longitude;
-   loc.innerText="الموقع: "+locationText;
+   locationText =
+    p.coords.latitude + "," + p.coords.longitude;
+   loc.innerText="📍 الموقع محفوظ";
+   locationReady=true;
   },
   e=>{
-   loc.innerText="لم يتم السماح بالموقع";
+   loc.innerText="❌ لم يتم السماح بالموقع";
   }
  );
 }
@@ -78,4 +25,46 @@ function getLocation(){
 function addPhoto(){
  let i=document.createElement("input");
  i.type="file";
- i.accept="image/*";*
+ i.accept="image/*";
+ i.onchange=()=>{
+  photoCount++;
+  photos.innerText="عدد الصور المضافة: "+photoCount;
+ };
+ i.click();
+}
+
+function savePDF(){
+ if(!shop.value || !phone.value){
+  msg.innerText="يرجى إدخال اسم المحل ورقم الهاتف";
+  return;
+ }
+
+ if(!locationReady){
+  msg.innerText="⚠️ يرجى أخذ الموقع أولًا قبل حفظ PDF";
+  return;
+ }
+
+ let date=new Date().toLocaleString();
+ let mapLink="https://maps.google.com/?q="+locationText;
+
+ let w=window.open("");
+ w.document.write(`
+ <html>
+ <head><title>زيارة - سما بغداد</title></head>
+ <body style="font-family:Tahoma;direction:rtl">
+ <h2>سما بغداد</h2>
+ <p><b>اسم المحل:</b> ${shop.value}</p>
+ <p><b>رقم الهاتف:</b> ${phone.value}</p>
+ <p><b>تاريخ الزيارة:</b> ${date}</p>
+ <p><b>الموقع:</b> ${locationText}</p>
+ <p><b>رابط الخريطة:</b><br>
+ <a href="${mapLink}">${mapLink}</a></p>
+ <p><b>ملاحظات:</b><br>${note.value}</p>
+ </body>
+ </html>
+ `);
+ w.document.close();
+ w.focus();
+ w.print();
+}
+</script>
