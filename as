@@ -1,7 +1,75 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>سما بغداد</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- مكتبة PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<style>
+body{
+ font-family:Tahoma;
+ direction:rtl;
+ background:#f2f2f2;
+ padding:15px
+}
+.box{
+ background:#fff;
+ padding:15px;
+ border-radius:8px;
+ max-width:420px;
+ margin:auto;
+ box-shadow:0 0 10px #ccc
+}
+h2{text-align:center;color:#0a4}
+input,textarea,button{
+ width:100%;
+ padding:10px;
+ margin:6px 0;
+ font-size:15px
+}
+button{
+ background:#0a4;
+ color:#fff;
+ border:none;
+ border-radius:5px
+}
+.info{font-size:13px;color:#444}
+</style>
+</head>
+
+<body>
+
+<div class="box">
+<h2>سما بغداد</h2>
+
+<input id="shop" placeholder="اسم المحل">
+<input id="phone" placeholder="رقم الهاتف">
+<textarea id="note" placeholder="ملاحظات"></textarea>
+
+<button onclick="getLocation()">📍 أخذ الموقع</button>
+<div id="loc" class="info">الموقع: غير محدد</div>
+
+<button onclick="savePDF()">📄 حفظ PDF</button>
+<div id="msg" class="info"></div>
+</div>
+
+<!-- محتوى PDF المخفي -->
+<div id="pdfContent" style="display:none">
+<h2>سما بغداد</h2>
+<p><b>اسم المحل:</b> <span id="pShop"></span></p>
+<p><b>رقم الهاتف:</b> <span id="pPhone"></span></p>
+<p><b>تاريخ الزيارة:</b> <span id="pDate"></span></p>
+<p><b>الموقع:</b> <span id="pLocation"></span></p>
+<p><b>رابط الخريطة:</b><br><span id="pMap"></span></p>
+<p><b>ملاحظات:</b><br><span id="pNote"></span></p>
+</div>
+
 <script>
 let locationText="";
-let locationReady=false;
-let photoCount=0;
+let mapLink="";
 
 function getLocation(){
  if(!navigator.geolocation){
@@ -11,10 +79,9 @@ function getLocation(){
  loc.innerText="⏳ جارٍ تحديد الموقع...";
  navigator.geolocation.getCurrentPosition(
   p=>{
-   locationText =
-    p.coords.latitude + "," + p.coords.longitude;
+   locationText = p.coords.latitude + "," + p.coords.longitude;
+   mapLink = "https://maps.google.com/?q=" + locationText;
    loc.innerText="📍 الموقع محفوظ";
-   locationReady=true;
   },
   e=>{
    loc.innerText="❌ لم يتم السماح بالموقع";
@@ -22,49 +89,34 @@ function getLocation(){
  );
 }
 
-function addPhoto(){
- let i=document.createElement("input");
- i.type="file";
- i.accept="image/*";
- i.onchange=()=>{
-  photoCount++;
-  photos.innerText="عدد الصور المضافة: "+photoCount;
- };
- i.click();
-}
-
 function savePDF(){
  if(!shop.value || !phone.value){
   msg.innerText="يرجى إدخال اسم المحل ورقم الهاتف";
   return;
  }
-
- if(!locationReady){
-  msg.innerText="⚠️ يرجى أخذ الموقع أولًا قبل حفظ PDF";
+ if(!locationText){
+  msg.innerText="يرجى أخذ الموقع أولًا";
   return;
  }
 
- let date=new Date().toLocaleString();
- let mapLink="https://maps.google.com/?q="+locationText;
+ pShop.innerText = shop.value;
+ pPhone.innerText = phone.value;
+ pDate.innerText = new Date().toLocaleString();
+ pLocation.innerText = locationText;
+ pMap.innerText = mapLink;
+ pNote.innerText = note.value;
 
- let w=window.open("");
- w.document.write(`
- <html>
- <head><title>زيارة - سما بغداد</title></head>
- <body style="font-family:Tahoma;direction:rtl">
- <h2>سما بغداد</h2>
- <p><b>اسم المحل:</b> ${shop.value}</p>
- <p><b>رقم الهاتف:</b> ${phone.value}</p>
- <p><b>تاريخ الزيارة:</b> ${date}</p>
- <p><b>الموقع:</b> ${locationText}</p>
- <p><b>رابط الخريطة:</b><br>
- <a href="${mapLink}">${mapLink}</a></p>
- <p><b>ملاحظات:</b><br>${note.value}</p>
- </body>
- </html>
- `);
- w.document.close();
- w.focus();
- w.print();
+ html2pdf()
+  .from(document.getElementById("pdfContent"))
+  .set({
+    margin: 10,
+    filename: "زيارة-سما-بغداد.pdf",
+    html2canvas: { scale: 2 },
+    jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+  })
+  .save();
 }
 </script>
+
+</body>
+</html>
